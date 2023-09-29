@@ -10,17 +10,24 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <random>
 #include <string>
 
-static inline int random_address(int lower, int upper) {
-  return (rand() % (upper - lower + 1)) + lower;
+static inline int random_number(int min, int max) {
+  // the random device that will seed the generator
+  std::random_device seeder;
+  // then make a mersenne twister engine
+  std::mt19937 engine(seeder());
+  // then the easy part... the distribution
+  std::uniform_int_distribution<int> dist(min, max);
+  return dist(engine);
 }
 
 static inline std::string generate_garbage_string(int width) {
   static const char *garbage = ",|\\!@#$%^&*-_+=.:;?,/";
   std::string s;
   for (int i = 0; i < width; ++i) {
-    s.push_back(garbage[std::rand() % (std::strlen(garbage) - 1)]);
+    s.push_back(garbage[random_number(0, std::strlen(garbage) - 1)]);
   }
   return s;
 }
@@ -34,7 +41,7 @@ Game::Game(std::string _dictionary_path, int _columns, int _rows,
   //
   std::srand(std::time(NULL));
   // Compute the starting address.
-  start_address = random_address(0xA000, 0xFFFF - rows * columns * column_size);
+  start_address = random_number(0xA000, 0xFFFF - rows * columns * column_size);
   //
   initscr();
   clear();
@@ -70,14 +77,29 @@ bool Game::initialize() {
 
   // ==========================================================================
   // Select and place the words.
-  int total_words = 3;
-  while (total_words) {
-    std::size_t index = std::rand() % (dictionary.size() - 1);
-    Word word(0, 0, dictionary[index]);
+  int total_words = 3, round = 10;
+  while (total_words && round) {
+    // Get a random word.
+    std::string string = dictionary[random_number(0, dictionary.size() - 1)];
+    // Prepare the word object.
+    Word word(0, 0, string);
+    // Check if we already selected this word.
     if (std::find(words.begin(), words.end(), word) == words.end()) {
-      total_words--;
+      // Find a random place.
+      if (this->find_unoccupied_space_for_word(word)) {
+        total_words--;
+        // Place the word.
+        content[word.column].replace(word.start, word.length,
+                                     word.word.c_str());
+        words.emplace_back(word);
+        continue;
+      }
     }
-    // Place the word.
+    round--;
+  }
+  if (round == 0) {
+    printw("Failed to initialize the system.\n");
+    return false;
   }
 
   // ==========================================================================
@@ -100,6 +122,10 @@ bool Game::initialize() {
   }
   printw("\n");
   printw("Press 'q' to exit\n");
+  for (std::size_t i = 0; i < words.size(); ++i) {
+    printw("[%lu, %lu, %lu] `%s`\n", words[i].column, words[i].start, words[i].end,
+           words[i].word.c_str());
+  }
 
   // ==========================================================================
   this->move_cursor_to(0, 0, 0);
@@ -189,21 +215,29 @@ void Game::move_cursor_to(int x, int y, int column) const {
   }
 }
 
-bool Game::check_if_occupied_by_word(const Word & word) const {
-  if ((word.column < 0) || (word.column >= columns)) {
-    return false;
-  }
-  if ((word.start < 0) || (word.end >= content[word.column].length())) {
-    return false;
-  }
-  for (std::size_t i = 0; i < words.size(); ++i) {
-    if (words[i].column == column) {
-      if ((begin <= (words[i].position + words[i].word.length())) && (end >= words[i].position){
-
+bool Game::find_unoccupied_space_for_word(Word &word) const {
+  bool overlaps;
+  for (std::size_t round = 0; round < 20; ++round) {
+    // Place the word.
+    word.column = random_number(0, columns - 1);
+    word.start = random_number(0, rows * column_size - word.length);
+    word.end = word.start + word.length;
+    // Check if it overlaps with another word.
+    overlaps = false;
+    for (std::size_t i = 0; i < words.size(); ++i) {
+      if (word.overlap(words[i])) {
+        overlaps = true;
+        break;
       }
     }
+    if (!overlaps) {
+      return true;
+    }
   }
-  return true;
+  word.column = 0;
+  word.start = 0;
+  word.end = 0;
+  return false;
 }
 
 } // namespace robsec

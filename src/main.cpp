@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     std::cout << "    " << argv[0] << " <dictionary>\n";
     return 1;
   }
-  robsec::Game game(argv[1], 2, 10, 8);
+  robsec::Game game(argv[1], 2, 4, 8);
   if (!game.initialize()) {
     return 1;
   }

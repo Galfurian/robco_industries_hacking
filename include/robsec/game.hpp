@@ -11,18 +11,21 @@ namespace robsec {
 
 class Word {
 public:
-  int column;
-  int start;
-  int end;
+  std::size_t column;
+  std::size_t start;
+  std::size_t end;
   std::string word;
+  std::size_t length;
 
-  Word(int _column, int _start, std::string _word)
+  Word(std::size_t _column, std::size_t _start, std::string _word)
       : column(_column), start(_start), end(_start + _word.length()),
-        word(_word) {
+        word(_word), length(_word.length()) {
     // Nothing to do.
   }
   bool operator==(const Word &rhs) const { return this->word == rhs.word; }
-  bool overlap(const Word &rhs) const { return this->word == rhs.word; }
+  bool overlap(const Word &rhs) const {
+    return (start <= rhs.end) && (rhs.start <= end);
+  }
 };
 
 class Game {
@@ -61,7 +64,7 @@ private:
 
   void move_cursor_to(int x, int y, int column) const;
 
-  bool check_if_occupied_by_word(int column, int position, int length) const;
+  bool find_unoccupied_space_for_word(Word &word) const;
 };
 
 } // namespace robsec
