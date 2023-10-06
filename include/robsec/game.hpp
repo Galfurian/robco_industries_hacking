@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace robsec
 {
@@ -39,12 +40,10 @@ public:
     std::size_t start;
     std::size_t end;
     std::string string;
-    std::size_t length;
     std::vector<ScreenLocation> coordinates;
 
     Word(std::size_t _panel, std::size_t _start, std::string _string)
-        : panel(_panel), start(_start), end(_start + _string.length()), string(_string),
-          length(_string.length()), coordinates()
+        : panel(_panel), start(_start), end(_start + _string.length()), string(_string), coordinates()
     {
         // Nothing to do.
     }
@@ -56,37 +55,82 @@ public:
     {
         return (start <= rhs.end) && (rhs.start <= end);
     }
+    inline bool overlap(const std::vector<Word> &words) const
+    {
+        for (const auto &other : words) {
+            if (this->overlap(other)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool is_selected(std::size_t c, std::size_t position) const
     {
         return (panel == c) && (start <= position) && (position < end);
     }
 };
 
+struct DictionaryGroup {
+    std::size_t length;
+    std::vector<std::string> words;
+
+    inline bool operator==(const DictionaryGroup &other) const
+    {
+        return length == other.length;
+    }
+};
+
 class Game {
 private:
+    /// Path to the dictionary.
     std::string dictionary_path;
-    std::size_t start_address;
-    std::size_t panels;
-    std::size_t rows;
-    std::size_t panel_size;
-    std::size_t attempts_max;
-    std::size_t attempts;
-    GameLocation position;
-    std::vector<Word> words;
-    std::vector<std::string> content;
+    /// The full dictionary.
     std::vector<std::string> dictionary;
+    /// The full dictionary.
+    std::vector<DictionaryGroup> sorted_dictionary;
+    /// Starting address when displaying the game.
+    std::size_t start_address;
+    /// The total number of panels.
+    std::size_t n_panels;
+    /// The number of rows per panel.
+    std::size_t n_rows;
+    /// The number of columns per panel.
+    std::size_t n_columns;
+    /// The number of words in the game.
+    std::size_t n_words;
+    /// The maximum number of attempts.
+    int attempts_max;
+    /// The current number of remaining attempts.
+    int attempts;
+    /// The cursor position.
+    GameLocation position;
+    /// The correct word inside the words vector.
+    std::string solution;
+    /// The list of words in the game.
+    std::vector<Word> words;
+    /// The content of the panels.
+    std::vector<std::string> content;
+    /// The current game state.
+    enum GameState {
+        Running,
+        MousePressed,
+        EnterPressed,
+        Won,
+        Lost
+    } state;
 
 public:
-    Game(std::string _dictionary_path, std::size_t _panels, std::size_t _rows, std::size_t _panel_size);
+    Game(std::string _dictionary_path, std::size_t _n_panels, std::size_t _n_rows, std::size_t _n_columns, std::size_t _n_words, int _attempts_max);
 
     bool initialize();
 
     void stop();
 
-    void run();
+    bool run();
 
 private:
-    void update();
+    void render();
 
     void parse_input(int key);
 
@@ -113,6 +157,10 @@ private:
     void move_cursor_to(const ScreenLocation &location) const;
 
     void move_cursor_to(int x, int y) const;
+
+    bool load_dictionary();
+
+    const Word *find_selected_word() const;
 };
 
 } // namespace robsec
