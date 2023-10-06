@@ -207,7 +207,7 @@ void Game::render()
         }
         common_letters = count_common_letters(selected_word->string.c_str(), solution.c_str());
         --attempts;
-        if (attempts < 0) {
+        if (attempts <= 0) {
             state = Lost;
             return;
         }
@@ -237,6 +237,7 @@ void Game::render()
     }
     printw("\n");
     printw("Press 'q' to exit\n");
+    int x_offset = getcurx(stdscr), y_offset = getcury(stdscr);
     for (const auto &word : words) {
         bool is_selected = (selected_word && selected_word->string == word.string);
         if (is_selected) {
@@ -249,7 +250,7 @@ void Game::render()
             attroff(A_REVERSE);
         }
         if (is_selected && ((state == MousePressed) || (state == EnterPressed))) {
-            wmove(stdscr, getcury(stdscr) + (attempts_max - attempts - 1) * 2, getcurx(stdscr));
+            wmove(stdscr, y_offset + (attempts_max - attempts - 1) * 2, x_offset);
             printw("> %s\n", word.string.c_str());
             printw("> Entry denied, %d correct.\n", common_letters);
         }
