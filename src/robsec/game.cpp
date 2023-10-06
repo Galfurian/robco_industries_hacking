@@ -148,8 +148,6 @@ bool Game::initialize()
             // Find a random place.
             if (this->find_unoccupied_space_for_word(word)) {
                 total_words--;
-                // Place the word.
-                content[word.panel].replace(word.start, word.string.length(), word.string.c_str());
                 words.emplace_back(word);
                 continue;
             }
@@ -239,20 +237,22 @@ void Game::render()
     }
     printw("\n");
     printw("Press 'q' to exit\n");
-    if (selected_word) {
-        if (selected_word && ((state == MousePressed) || (state == EnterPressed))) {
+    for (const auto &word : words) {
+        bool is_selected = (selected_word && selected_word->string == word.string);
+        if (is_selected) {
+            attron(A_REVERSE);
+        }
+        for (std::size_t j = 0; j < word.string.length(); ++j) {
+            mvaddch(static_cast<int>(word.coordinates[j].y), static_cast<int>(word.coordinates[j].x), word.string[j]);
+        }
+        if (is_selected) {
+            attroff(A_REVERSE);
+        }
+        if (is_selected && ((state == MousePressed) || (state == EnterPressed))) {
             wmove(stdscr, getcury(stdscr) + (attempts_max - attempts - 1) * 2, getcurx(stdscr));
-            printw("> %s\n", selected_word->string.c_str());
+            printw("> %s\n", word.string.c_str());
             printw("> Entry denied, %d correct.\n", common_letters);
         }
-        attron(A_REVERSE);
-        for (std::size_t j = 0; j < selected_word->string.length(); ++j) {
-            mvaddch(
-                static_cast<int>(selected_word->coordinates[j].y),
-                static_cast<int>(selected_word->coordinates[j].x),
-                selected_word->string[j]);
-        }
-        attroff(A_REVERSE);
     }
     state = Running;
 }

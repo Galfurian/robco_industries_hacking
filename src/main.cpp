@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
         std::cout << "    " << argv[0] << " <dictionary>\n";
         return 1;
     }
-    robsec::Game game(argv[1], 4, 30, 12, 12, 4);
+    robsec::Game game(argv[1], 3, 20, 12, 12, 4);
     if (!game.initialize()) {
         return 1;
     }
