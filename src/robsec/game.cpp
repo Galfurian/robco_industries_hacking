@@ -4,6 +4,7 @@
 
 #include "robsec/game.hpp"
 
+#include <cstdint>
 #include <curses.h>
 
 #include <algorithm>
@@ -46,9 +47,10 @@ static inline std::string generate_garbage_string(std::size_t width)
 template <typename Iter, typename RandomGenerator>
 Iter select_randomly(Iter start, Iter end, RandomGenerator &g)
 {
-    long ub = std::distance(start, end) - 1;
+    using type_t = typename Iter::difference_type;
+    type_t ub = std::distance(start, end) - 1;
     if (ub > 0) {
-        std::uniform_int_distribution<long> dis(0, ub);
+        std::uniform_int_distribution<type_t> dis(0, ub);
         std::advance(start, dis(g));
     }
     return start;

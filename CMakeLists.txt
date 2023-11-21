@@ -86,7 +86,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 # Link curses.
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CURSES_LIBRARIES})
 # Include cmdlp.
-target_include_directories(${PROJECT_NAME} PUBLIC ${cmdlp_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${cmdlp_SOURCE_DIR}/include)
 # Link cmdlp.
 target_link_libraries(${PROJECT_NAME} PUBLIC cmdlp)
 
