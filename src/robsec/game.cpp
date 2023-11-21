@@ -206,8 +206,7 @@ void Game::render()
             return;
         }
         common_letters = count_common_letters(selected_word->string.c_str(), solution.c_str());
-        --attempts;
-        if (attempts <= 0) {
+        if (--attempts == 0) {
             state = Lost;
             return;
         }
