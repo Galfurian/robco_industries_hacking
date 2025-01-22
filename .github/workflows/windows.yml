@@ -51,6 +51,14 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    # Step: Install Dependencies
+    - name: Install PDCurses
+      run: |
+        # Install PDCurses for Windows
+        choco install pdcurses -y
+        echo C:/tools/pdcurses/lib/pdcurses.lib >> %GITHUB_PATH%
+        echo C:/tools/pdcurses/include >> %GITHUB_INCLUDE_PATH%
+
     # Step: Install MinGW for GCC support
     - name: Install MinGW (For GCC Support)
       if: matrix.cc == 'gcc'
