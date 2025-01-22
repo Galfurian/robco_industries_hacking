@@ -1,5 +1,9 @@
 # RobCo Industries Hacking Game
 
+[![Ubuntu](https://github.com/Galfurian/robco_industries_hacking/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Galfurian/robco_industries_hacking/actions/workflows/ubuntu.yml)
+[![MacOS](https://github.com/Galfurian/robco_industries_hacking/actions/workflows/macos.yml/badge.svg)](https://github.com/Galfurian/robco_industries_hacking/actions/workflows/macos.yml)
+[![Documentation](https://github.com/Galfurian/robco_industries_hacking/actions/workflows/documentation.yml/badge.svg)](https://github.com/Galfurian/robco_industries_hacking/actions/workflows/documentation.yml)
+
 Welcome to the **RobCo Industries Hacking Game**, an NCurses-based terminal game inspired by the hacking mechanic from the Fallout series. Test your deduction skills by guessing the correct word from a scrambled list within a limited number of attempts.
 
 ## Features
