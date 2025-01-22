@@ -73,22 +73,22 @@ endif(NOT cmdlp_POPULATED)
 # EXECUTABLE
 # -----------------------------------------------------------------------------
 # Add the C++ library.
-add_executable(${PROJECT_NAME}
+add_executable(robsec
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/robsec/game.cpp
 )
 # Inlcude header directories.
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include ${CURSES_INCLUDE_DIR})
+target_include_directories(robsec PUBLIC ${PROJECT_SOURCE_DIR}/include ${CURSES_INCLUDE_DIR})
 # Set compilation flags.
-target_compile_options(${PROJECT_NAME} PUBLIC ${COMPILE_OPTIONS})
+target_compile_options(robsec PUBLIC ${COMPILE_OPTIONS})
 # Set compiler flags.
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+target_compile_features(robsec PUBLIC cxx_std_11)
 # Link curses.
-target_link_libraries(${PROJECT_NAME} PUBLIC ${CURSES_LIBRARIES})
+target_link_libraries(robsec PUBLIC ${CURSES_LIBRARIES})
 # Include cmdlp.
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${cmdlp_SOURCE_DIR}/include)
+target_include_directories(robsec SYSTEM PUBLIC ${cmdlp_SOURCE_DIR}/include)
 # Link cmdlp.
-target_link_libraries(${PROJECT_NAME} PUBLIC cmdlp)
+target_link_libraries(robsec PUBLIC cmdlp)
 
 # -----------------------------------------------------------------------------
 # COMPILATION FLAGS
@@ -96,13 +96,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC cmdlp)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Disable warnings that suggest using MSVC-specific safe functions
-    target_compile_definitions(${PROJECT_NAME} PUBLIC _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(robsec PUBLIC _CRT_SECURE_NO_WARNINGS)
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} PUBLIC /WX)
+        target_compile_options(robsec PUBLIC /WX)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(WARNINGS_AS_ERRORS)
-        target_compile_options(${PROJECT_NAME} PUBLIC -Werror)
+        target_compile_options(robsec PUBLIC -Werror)
     endif()
 endif()
 
@@ -110,14 +110,14 @@ if(STRICT_WARNINGS)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         # Mark system headers as external for MSVC explicitly
         # https://devblogs.microsoft.com/cppblog/broken-warnings-theory
-        target_compile_options(${PROJECT_NAME} PUBLIC /experimental:external)
-        target_compile_options(${PROJECT_NAME} PUBLIC /external:I ${CMAKE_BINARY_DIR})
-        target_compile_options(${PROJECT_NAME} PUBLIC /external:anglebrackets)
-        target_compile_options(${PROJECT_NAME} PUBLIC /external:W0)
+        target_compile_options(robsec PUBLIC /experimental:external)
+        target_compile_options(robsec PUBLIC /external:I ${CMAKE_BINARY_DIR})
+        target_compile_options(robsec PUBLIC /external:anglebrackets)
+        target_compile_options(robsec PUBLIC /external:W0)
 
-        target_compile_options(${PROJECT_NAME} PUBLIC /W4)
+        target_compile_options(robsec PUBLIC /W4)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wconversion -pedantic)
+        target_compile_options(robsec PUBLIC -Wall -Wextra -Wconversion -pedantic)
     endif()
 endif()
 
@@ -149,7 +149,7 @@ if(DOXYGEN_FOUND)
 
     # = CUSTOMIZATION =========================================================
     set(DOXYGEN_WARN_FORMAT "$file:$line: $text")
-    set(DOXYGEN_PROJECT_NAME ${PROJECT_NAME})
+    set(DOXYGEN_PROJECT_NAME robsec)
     set(DOXYGEN_USE_MDFILE_AS_MAINPAGE ${PROJECT_SOURCE_DIR}/README.md)
     set(DOXYGEN_SHOW_INCLUDE_FILES NO)
     set(DOXYGEN_GENERATE_TREEVIEW YES)
@@ -161,7 +161,7 @@ if(DOXYGEN_FOUND)
         ${doxygenawesome_SOURCE_DIR}/doxygen-awesome-darkmode-toggle.js
     )
     doxygen_add_docs(
-        ${PROJECT_NAME}_documentation
+        robsec_documentation
         ${PROJECT_SOURCE_DIR}/README.md
         ${PROJECT_SOURCE_DIR}/src/robsec/game.cpp
         ${PROJECT_SOURCE_DIR}/include/robsec/game.hpp

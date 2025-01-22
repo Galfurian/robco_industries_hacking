@@ -1,29 +1,75 @@
 name: MacOS
+
+# Trigger the workflow on push or pull requests for main and develop branches
 on:
-    push:
-        branches-ignore:
-            - "releases/**"
-        paths-ignore:
-            - "**.md"
-            - ".gitignore"
-            - "windows.yml"
-            - "ubuntu.yml"
-            - "documentation.yml"
-    pull_request:
-        paths-ignore:
-            - "**.md"
-            - ".gitignore"
-            - "windows.yml"
-            - "ubuntu.yml"
-            - "documentation.yml"
+  push:
+    branches:
+    - main
+    - develop
+    paths:
+    - '**/*.c'
+    - '**/*.cpp'
+    - '**/*.h'
+    - '**/*.hpp'
+    - '**/CMakeLists.txt'
+    - '**/Makefile'
+    - '**/cmake/**'
+    - '.github/workflows/macos.yml'
+  pull_request:
+    branches:
+    - main
+    - develop
+    paths:
+    - '**/*.c'
+    - '**/*.cpp'
+    - '**/*.h'
+    - '**/*.hpp'
+    - '**/CMakeLists.txt'
+    - '**/Makefile'
+    - '**/cmake/**'
+    - '.github/workflows/macos.yml'
+
 jobs:
-    test:
-        name: Build
-        runs-on: macos-latest
-        steps:
-            - name: Clone repo
-              uses: actions/checkout@v2
-            - name: Build
-              run: |
-                  cmake -B build -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON
-                  cmake --build build --parallel 2
+  build:
+    name: Build and Test (macOS)
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { cc: clang, cxx: clang++, label: "Apple Clang" },  # Default macOS Clang
+          { cc: gcc-11, cxx: g++-11, label: "GCC 11" }       # Install GCC 11
+        ]
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install GCC (if applicable)
+        if: matrix.cc == 'gcc-11'
+        run: |
+          brew update
+          brew install gcc@11
+          echo "CC=gcc-11" >> $GITHUB_ENV
+          echo "CXX=g++-11" >> $GITHUB_ENV
+
+      - name: Configure Project
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_C_COMPILER=${{ env.CC }} -DCMAKE_CXX_COMPILER=${{ env.CXX }} -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON ..
+
+      - name: Build Project
+        run: |
+          cd build
+          cmake --build . --parallel 2
+
+      - name: Run Tests
+        run: |
+          cd build
+          ctest -C Debug --verbose

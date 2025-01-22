@@ -1,11 +1,13 @@
 #include "robsec/game.hpp"
 
 #include <iostream>
-#include <cmdlp/option_parser.hpp>
+
+#include <cmdlp/parser.hpp>
+#include <ncurses.h>
 
 int main(int argc, char *argv[])
 {
-    cmdlp::OptionParser parser(argc, argv);
+    cmdlp::Parser parser(argc, argv);
     parser.addOption("-d", "--dictionary", "The path to the dictionary.", "", true);
     parser.addOption("-p", "--pannels", "The number of pannels.", 3, false);
     parser.addOption("-r", "--rows", "The number of rows.", 20, false);
@@ -26,6 +28,7 @@ int main(int argc, char *argv[])
     }
     bool state = game.run();
     game.stop();
+
     if (state) {
         printf("Terminal unlocked\n");
     } else {
