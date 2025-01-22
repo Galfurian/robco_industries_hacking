@@ -233,10 +233,10 @@ bool Game::initialize()
         if (std::find(words.begin(), words.end(), word) == words.end()) {
             // Find a random place.
             if (this->find_unoccupied_space_for_word(word)) {
-                total_words--;                              // Decrease the count of words to place.
-                words.emplace_back(word);                   // Add the word to the placed words list.
-                selection.erase(selection.begin() + index); // Remove the word from the selection.
-                continue;                                   // Skip the rest of the loop for this iteration.
+                total_words--;                                                 // Decrease the count of words to place.
+                words.emplace_back(word);                                      // Add the word to the placed words list.
+                selection.erase(selection.begin() + static_cast<long>(index)); // Remove the word from the selection.
+                continue;                                                      // Skip the rest of the loop for this iteration.
             }
         }
         // Decrease the round count to prevent infinite loops.
