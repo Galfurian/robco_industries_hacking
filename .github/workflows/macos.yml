@@ -34,42 +34,23 @@ jobs:
     name: Build and Test (macOS)
     runs-on: macos-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include: [
-          { cc: clang, cxx: clang++, label: "Apple Clang" },  # Default macOS Clang
-          { cc: gcc-11, cxx: g++-11, label: "GCC 11" }       # Install GCC 11
-        ]
-
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+    # Step: Clone the project.
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Install GCC (if applicable)
-        if: matrix.cc == 'gcc-11'
-        run: |
-          brew update
-          brew install gcc@11
-          echo "CC=gcc-11" >> $GITHUB_ENV
-          echo "CXX=g++-11" >> $GITHUB_ENV
+    # Step: Configure Project.
+    - name: Configure Project
+      run: |
+        cmake -B build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON -DWARNINGS_AS_ERRORS=ON -DSTRICT_WARNINGS=ON
 
-      - name: Configure Project
-        run: |
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_C_COMPILER=${{ env.CC }} -DCMAKE_CXX_COMPILER=${{ env.CXX }} -DBUILD_TESTS=ON -DWARNINGS_AS_ERRORS=ON ..
+    # Step: Build Project.
+    - name: Build Project
+      run: |
+        cmake --build build --config Debug --parallel 2
 
-      - name: Build Project
-        run: |
-          cd build
-          cmake --build . --parallel 2
-
-      - name: Run Tests
-        run: |
-          cd build
-          ctest -C Debug --verbose
+    # Step: Run Tests.
+    - name: Run Tests
+      run: |
+        ctest --test-dir build --build-config Debug --verbose
+    
