@@ -145,6 +145,7 @@ public:
     /// @brief Main game loop for handling events and rendering.
     bool run();
     
+    /// @brief Prints the list of log messages.
     void print_log() const;
 
 private:
