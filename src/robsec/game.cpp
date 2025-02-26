@@ -27,15 +27,6 @@
 /// @brief Length of the header in terms of newlines and additional spacing.
 #define HEADER_LEN (3 + 2)
 
-/// @brief Macro to check the result of an expression and return false if it fails.
-#define CHECK_AND_REPORT(expr, msg)                     \
-    do {                                                \
-        if ((expr) == ERR) {                            \
-            std::cerr << "Error: " << msg << std::endl; \
-            return false;                               \
-        }                                               \
-    } while (0)
-
 /// @brief Generates a random number within the specified range.
 ///
 /// @tparam T The type of the range values (e.g., int, float).
@@ -159,7 +150,6 @@ Game::Game(std::string _dictionary_path,
            std::size_t _n_words,
            int _attempts_max)
     : dictionary_path(_dictionary_path),
-      dictionary(),
       start_address(0),
       n_panels(_n_panels),
       n_rows(_n_rows),
@@ -167,10 +157,11 @@ Game::Game(std::string _dictionary_path,
       n_words(_n_words),
       attempts_max(_attempts_max),
       attempts(attempts_max),
-      position({ 0, 0, 0 }),
+      cursor({ 0, 0, 0 }),
       solution(),
       words(),
       content(),
+      log_messages(),
       state(Running)
 {
     // Nothing to do.
@@ -180,13 +171,13 @@ bool Game::initialize()
 {
     // Load the dictionary.
     if (!this->load_dictionary()) {
-        std::cerr << "Error: Failed to load the dictionary." << std::endl;
+        log_messages.push_back("Error: Failed to load the dictionary.\n");
         return false;
     }
 
     // Ensure the sorted dictionary is not empty.
     if (sorted_dictionary.empty()) {
-        std::cerr << "Error: The sorted dictionary is empty after loading." << std::endl;
+        log_messages.push_back("Error: The sorted dictionary is empty after loading.");
         return false;
     }
 
@@ -195,13 +186,13 @@ bool Game::initialize()
     try {
         dictionary = &(*select_randomly(sorted_dictionary.begin(), sorted_dictionary.end()));
     } catch (const std::exception &e) {
-        std::cerr << "Error: Failed to select a random dictionary group. Exception: " << e.what() << std::endl;
+        log_messages.push_back("Error: Failed to select a random dictionary group. Exception: " + std::string(e.what()) + "\n");
         return false;
     }
 
     // Ensure the dictionary group contains words.
     if (dictionary->words.empty()) {
-        std::cerr << "Error: The selected dictionary group contains no words." << std::endl;
+        log_messages.push_back("Error: The selected dictionary group contains no words.");
         return false;
     }
 
@@ -213,7 +204,7 @@ bool Game::initialize()
 
     // Ensure there are words to place.
     if (total_words == 0) {
-        std::cerr << "Error: No words available to place after adjustments." << std::endl;
+        log_messages.push_back("Error: No words available to place after adjustments.");
         return false;
     }
 
@@ -245,13 +236,13 @@ bool Game::initialize()
 
     // Check if the placement process failed.
     if (round == 0) {
-        std::cerr << "Error: Failed to place all words within the allowed rounds." << std::endl;
+        log_messages.push_back("Error: Failed to place all words within the allowed rounds.");
         return false;
     }
 
     // Ensure there are words placed in the game.
     if (words.empty()) {
-        std::cerr << "Error: No words were placed in the game." << std::endl;
+        log_messages.push_back("Error: No words were placed in the game.");
         return false;
     }
 
@@ -267,56 +258,56 @@ bool Game::initialize()
 
     // Initialize NCurses.
     if (initscr() == nullptr) {
-        std::cerr << "Error: Failed to initialize NCurses." << std::endl;
+        log_messages.push_back("Error: Failed to initialize NCurses.");
         return false;
     }
 
     // Clear the screen.
     if (clear() == ERR) {
-        std::cerr << "Error: Failed to clear the screen in NCurses." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to clear the screen in NCurses.");
         return false;
     }
 
     // Disable echo.
     if (noecho() == ERR) {
-        std::cerr << "Error: Failed to disable echo in NCurses." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to disable echo in NCurses.");
         return false;
     }
 
     // Enable cbreak mode.
     if (cbreak() == ERR) {
-        std::cerr << "Error: Failed to enable cbreak mode in NCurses." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to enable cbreak mode in NCurses.");
         return false;
     }
 
     // Enable keypad input for the main window.
     if (keypad(stdscr, true) == ERR) {
-        std::cerr << "Error: Failed to enable keypad input in NCurses." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to enable keypad input in NCurses.");
         return false;
     }
 
     // Initialize colors in NCurses.
     if (start_color() == ERR) {
-        std::cerr << "Error: Failed to initialize colors in NCurses." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to initialize colors in NCurses.");
         return false;
     }
 
     // Enable support for default background color.
     if (use_default_colors() == ERR) {
-        std::cerr << "Error: Failed to enable default terminal background color." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to enable default terminal background color.");
         return false;
     }
 
     // Define a color pair for yellow text with a transparent (default) background.
     if (init_pair(1, COLOR_YELLOW, -1) == ERR) {
-        std::cerr << "Error: Failed to define color pair 1 (yellow on default background)." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to define color pair 1 (yellow on default background).");
         return false;
     }
 
@@ -324,8 +315,8 @@ bool Game::initialize()
     try {
         content.resize(n_panels);
     } catch (const std::exception &e) {
-        std::cerr << "Error: Failed to resize content vector. Exception: " << e.what() << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to resize content vector. Exception: " + std::string(e.what()) + "\n");
         return false;
     }
 
@@ -335,15 +326,15 @@ bool Game::initialize()
             content[c] = generate_garbage_string(n_rows * n_columns);
         }
     } catch (const std::exception &e) {
-        std::cerr << "Error: Failed to generate garbage strings for panel content. Exception: " << e.what() << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to generate garbage strings for panel content. Exception: " + std::string(e.what()) + "\n");
         return false;
     }
 
     // Render the scene.
     if (!this->render()) {
-        std::cerr << "Error: Failed to render the game scene." << std::endl;
         endwin();
+        log_messages.push_back("Error: Failed to render the game scene.");
         return false;
     }
 
@@ -367,7 +358,7 @@ bool Game::run()
         // Render the scene.
         this->render();
         // Move the cursor.
-        this->move_cursor_to(position);
+        this->move_cursor_to(cursor);
         refresh();
         if (state == Won) {
             return true;
@@ -384,7 +375,7 @@ bool Game::render()
     // Find the currently selected word.
     const Word *selected_word = this->find_selected_word();
     if (!selected_word && ((state == MousePressed) || (state == EnterPressed))) {
-        std::cerr << "Error: No word is selected, but input was detected." << std::endl;
+        log_messages.push_back("Error: No word is selected, but input was detected.");
         return false;
     }
 
@@ -393,8 +384,10 @@ bool Game::render()
     // Check if we just pressed Enter or the mouse.
     if (selected_word && ((state == MousePressed) || (state == EnterPressed))) {
         if (selected_word->string == solution) {
+            log_messages.push_back("Won.");
             state = Won;
-            return true; // Exit early if the correct solution is found.
+            // Exit early if the correct solution is found.
+            return true;
         }
 
         // Count common letters.
@@ -403,35 +396,37 @@ bool Game::render()
         // Decrease attempts and check if the game is lost.
         if (--attempts == 0) {
             state = Lost;
-            return true; // Game ends when attempts run out.
+            log_messages.push_back("Lost.");
+            // Game ends when attempts run out.
+            return true;
         }
     }
 
     // Check if the cursor movement fails.
     if (wmove(stdscr, 0, 0) == ERR) {
-        std::cerr << "Error: Failed to move the cursor to the beginning." << std::endl;
+        log_messages.push_back("Error: Failed to move the cursor to the beginning.");
         return false;
     }
 
     // Print the header.
     if (printw(HEADER) == ERR) {
-        std::cerr << "Error: Failed to print the game header." << std::endl;
+        log_messages.push_back("Error: Failed to print the game header.");
         return false;
     }
 
     // Print attempts.
     if (printw("%d ATTEMPT(S) LEFT :", attempts) == ERR) {
-        std::cerr << "Error: Failed to print the remaining attempts." << std::endl;
+        log_messages.push_back("Error: Failed to print the remaining attempts.");
         return false;
     }
     for (int i = 0; i < attempts; ++i) {
         if (printw(" #") == ERR) {
-            std::cerr << "Error: Failed to print the attempt marker." << std::endl;
+            log_messages.push_back("Error: Failed to print the attempt marker.");
             return false;
         }
     }
     if (printw("\n\n") == ERR) {
-        std::cerr << "Error: Failed to print the attempts separator." << std::endl;
+        log_messages.push_back("Error: Failed to print the attempts separator.");
         return false;
     }
 
@@ -443,28 +438,28 @@ bool Game::render()
 
             // Print the address.
             if (printw("0x%04zX ", address) == ERR) {
-                std::cerr << "Error: Failed to print the address for row " << r << ", panel " << c << "." << std::endl;
+                log_messages.push_back("Error: Failed to print the address for row " + std::to_string(r) + ", panel " + std::to_string(c) + ".");
                 return false;
             }
 
             // Print the content.
             if (printw("%s", content[c].substr(r * n_columns, n_columns).c_str()) == ERR) {
-                std::cerr << "Error: Failed to print the panel content for row " << r << ", panel " << c << "." << std::endl;
+                log_messages.push_back("Error: Failed to print the panel content for row " + std::to_string(r) + ", panel " + std::to_string(c) + ".");
                 return false;
             }
 
             if (printw("  ") == ERR) {
-                std::cerr << "Error: Failed to print spacing for row " << r << ", panel " << c << "." << std::endl;
+                log_messages.push_back("Error: Failed to print spacing for row " + std::to_string(r) + ", panel " + std::to_string(c) + ".");
                 return false;
             }
         }
         if (printw("\n") == ERR) {
-            std::cerr << "Error: Failed to print row separator." << std::endl;
+            log_messages.push_back("Error: Failed to print row separator.");
             return false;
         }
     }
     if (printw("\nPress 'q' to exit\n") == ERR) {
-        std::cerr << "Error: Failed to print exit prompt." << std::endl;
+        log_messages.push_back("Error: Failed to print exit prompt.");
         return false;
     }
 
@@ -476,14 +471,14 @@ bool Game::render()
         // Enable reverse video for selected words.
         if (is_selected) {
             if (attron(A_REVERSE) == ERR) {
-                std::cerr << "Error: Failed to enable reverse video attribute." << std::endl;
+                log_messages.push_back("Error: Failed to enable reverse video attribute.");
                 return false;
             }
         }
         // Enable yellow color for unselected words.
         else {
             if (attron(COLOR_PAIR(1)) == ERR) {
-                std::cerr << "Error: Failed to enable yellow color for unselected word." << std::endl;
+                log_messages.push_back("Error: Failed to enable yellow color for unselected word.");
                 return false;
             }
         }
@@ -491,7 +486,7 @@ bool Game::render()
         // Print each character of the word.
         for (std::size_t j = 0; j < word.string.length(); ++j) {
             if (mvaddch(static_cast<int>(word.coordinates[j].y), static_cast<int>(word.coordinates[j].x), word.string[j]) == ERR) {
-                std::cerr << "Error: Failed to add character for word '" << word.string << "' at position " << j << "." << std::endl;
+                log_messages.push_back("Error: Failed to add character for word '" + word.string + "' at position " + std::to_string(j) + ".");
                 return false;
             }
         }
@@ -499,29 +494,29 @@ bool Game::render()
         // Disable the color or reverse video attributes.
         if (is_selected) {
             if (attroff(A_REVERSE) == ERR) {
-                std::cerr << "Error: Failed to disable reverse video attribute." << std::endl;
+                log_messages.push_back("Error: Failed to disable reverse video attribute.");
                 return false;
             }
         } else {
             if (attroff(COLOR_PAIR(1)) == ERR) {
-                std::cerr << "Error: Failed to disable yellow color for unselected word." << std::endl;
+                log_messages.push_back("Error: Failed to disable yellow color for unselected word.");
                 return false;
             }
         }
 
         if (is_selected && ((state == MousePressed) || (state == EnterPressed))) {
             if (wmove(stdscr, y_offset + (attempts_max - attempts - 1) * 2, x_offset) == ERR) {
-                std::cerr << "Error: Failed to move the cursor for word feedback." << std::endl;
+                log_messages.push_back("Error: Failed to move the cursor for word feedback.");
                 return false;
             }
 
             if (printw("> %s\n", word.string.c_str()) == ERR) {
-                std::cerr << "Error: Failed to print the selected word feedback." << std::endl;
+                log_messages.push_back("Error: Failed to print the selected word feedback.");
                 return false;
             }
 
             if (printw("> Entry denied, %d correct.\n", common_letters) == ERR) {
-                std::cerr << "Error: Failed to print the feedback for common letters." << std::endl;
+                log_messages.push_back("Error: Failed to print the feedback for common letters.");
                 return false;
             }
         }
@@ -534,9 +529,9 @@ bool Game::render()
 void Game::parse_input(int key)
 {
     // Check if it was a mouse click.
-    if (this->parse_mouse_position(key, position)) {
+    if (this->parse_mouse_position(key, cursor)) {
         state = MousePressed;
-    } else if (!this->parse_key_position(key, position)) {
+    } else if (!this->parse_key_position(key, cursor)) {
         if (key == 10) {
             state = EnterPressed;
         }
@@ -664,7 +659,7 @@ bool Game::load_dictionary()
     // Open the dictionary file.
     std::ifstream file(dictionary_path);
     if (!file.is_open()) {
-        std::cerr << "Failed to open dictionary file: " << dictionary_path << std::endl;
+        log_messages.push_back("Failed to open dictionary file: " + dictionary_path + "\n");
         return false; // Return false if the file cannot be opened.
     }
 
@@ -675,16 +670,13 @@ bool Game::load_dictionary()
         sorted_dictionary.emplace_back(DictionaryGroup{ i, {} });
     }
 
-    // Clean the main dictionary.
-    dictionary.clear();
-
     // Load the dictionary.
     std::string word;
 
     while (file >> word) {
         // Validate that the word is not empty before processing.
         if (word.empty()) {
-            std::cerr << "Encountered an empty word in the dictionary. Skipping..." << std::endl;
+            log_messages.push_back("Encountered an empty word in the dictionary. Skipping...");
             continue;
         }
 
@@ -693,12 +685,9 @@ bool Game::load_dictionary()
 
         // Ensure the word fits within the expected length bounds.
         if (modified_word.length() >= sorted_dictionary.size()) {
-            std::cerr << "Word '" << modified_word << "' exceeds the maximum supported length. Skipping..." << std::endl;
+            log_messages.push_back("Word '" + modified_word + "' exceeds the maximum supported length. Skipping...\n");
             continue;
         }
-
-        // Add the word to the main dictionary.
-        dictionary.emplace_back(modified_word);
 
         // Add the word to the appropriate group in the sorted dictionary.
         sorted_dictionary[modified_word.length()].words.push_back(modified_word);
@@ -722,8 +711,9 @@ bool Game::load_dictionary()
 
     // Check if all groups were removed.
     if (removed_groups == total_groups) {
-        std::cerr << "Error: All dictionary groups were removed due to n_words being too high (" << n_words << ").\n"
-                  << "Total groups before removal: " << total_groups << ", groups removed: " << removed_groups << "." << std::endl;
+        log_messages.push_back(
+            "Error: All dictionary groups were removed due to n_words being too high (" + std::to_string(n_words) + ").\nTotal groups before removal: " +
+            std::to_string(total_groups) + ", groups removed: " + std::to_string(removed_groups) + ".");
         return false;
     }
 
@@ -736,11 +726,18 @@ bool Game::load_dictionary()
 const Word *Game::find_selected_word() const
 {
     for (const auto &word : words) {
-        if (word.is_selected(position.panel, position.row * n_columns + position.column)) {
+        if (word.is_selected(cursor.panel, cursor.row * n_columns + cursor.column)) {
             return &word;
         }
     }
     return nullptr;
+}
+
+void Game::print_log() const
+{
+    for (const auto &message : log_messages) {
+        std::cout << message << "\n";
+    }
 }
 
 } // namespace robsec

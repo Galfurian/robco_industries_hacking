@@ -8,12 +8,12 @@
 int main(int argc, char *argv[])
 {
     cmdlp::Parser parser(argc, argv);
-    parser.addOption("-d", "--dictionary", "The path to the dictionary.", "", true);
-    parser.addOption("-p", "--pannels", "The number of pannels.", 3, false);
-    parser.addOption("-r", "--rows", "The number of rows.", 20, false);
-    parser.addOption("-c", "--columns", "The number of columns.", 12, false);
-    parser.addOption("-w", "--words", "The number of words.", 12, false);
-    parser.addOption("-a", "--attemps", "The number of attemps.", 4, false);
+    parser.addOption("-d", "--dictionary", "The path to the dictionary.", true, "");
+    parser.addOption("-p", "--pannels", "The number of pannels.", false, 3);
+    parser.addOption("-r", "--rows", "The number of rows.", false, 20);
+    parser.addOption("-c", "--columns", "The number of columns.", false, 12);
+    parser.addOption("-w", "--words", "The number of words.", false, 12);
+    parser.addOption("-a", "--attemps", "The number of attemps.", false, 4);
     parser.parseOptions();
 
     robsec::Game game(
@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
         parser.getOption<unsigned>("-w"),
         parser.getOption<int>("-a"));
     if (!game.initialize()) {
+        game.print_log();
         return 1;
     }
     bool state = game.run();

@@ -111,7 +111,6 @@ struct DictionaryGroup {
 class Game {
 private:
     std::string dictionary_path;                    ///< Path to the dictionary file.
-    std::vector<std::string> dictionary;            ///< The full list of dictionary words.
     std::vector<DictionaryGroup> sorted_dictionary; ///< Dictionary sorted by word length.
     std::size_t start_address;                      ///< Starting address for the game display.
     std::size_t n_panels;                           ///< Number of panels in the game.
@@ -120,10 +119,11 @@ private:
     std::size_t n_words;                            ///< Number of words in the game.
     int attempts_max;                               ///< Maximum number of allowed attempts.
     int attempts;                                   ///< Remaining number of attempts.
-    GameLocation position;                          ///< Current cursor position.
+    GameLocation cursor;                            ///< Current cursor position.
     std::string solution;                           ///< Correct word to guess.
     std::vector<Word> words;                        ///< Words used in the game.
     std::vector<std::string> content;               ///< Panel contents for display.
+    std::vector<std::string> log_messages;          ///< List of log messages.
     enum GameState {
         Running,      ///< Game is running.
         MousePressed, ///< Mouse button pressed.
@@ -145,6 +145,7 @@ public:
     /// @brief Main game loop for handling events and rendering.
     bool run();
     
+    void print_log() const;
 
 private:
     /// @brief Renders the game screen.
