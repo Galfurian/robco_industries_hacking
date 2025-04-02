@@ -125,6 +125,6 @@ This project is currently unlicensed.
 
 ## Screenshots
 
-![Screen 1](docs/screenshots/robsec_screenshot_1.png)
+![Screen 1](screenshots/robsec_screenshot_1.png)
 
-![Screen 1](docs/screenshots/robsec_screenshot_2.png)
+![Screen 2](screenshots/robsec_screenshot_2.png)

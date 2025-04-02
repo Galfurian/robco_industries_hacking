@@ -32,6 +32,8 @@
 *.app
 
 # Others.
-build
-.cache
 .vscode
+.cache
+.venv
+build
+site
